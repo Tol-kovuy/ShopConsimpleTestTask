@@ -11,6 +11,6 @@ namespace ShopConsimpleTestTask.Services
         Task<IEnumerable<ClientByLastDayDto>> GetBuyersByLastDaysAsycn(int days);
 
         // Повертає список категорій продуктів, які купував знайдений клієнт. Для кожної категорії повертає кількість куплених одиниць.
-        Task<IEnumerable<ProductCategoryDto>> GetCategoriesByClientAsync(int clientId);
+        Task<IEnumerable<ProductCategoryDto>> GetCategoriesByClientAsync(Guid clientId);
     }
 }

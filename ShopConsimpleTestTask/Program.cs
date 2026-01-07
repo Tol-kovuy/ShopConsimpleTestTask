@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShopConsimpleTestTask.Data;
+using ShopConsimpleTestTask.Services;
 
 internal class Program
 {
@@ -12,12 +13,19 @@ internal class Program
 
         builder.Services.AddControllers();
 
+        builder.Services.AddScoped<IShopService, ShopService>();
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
-            dbContext.Database.Migrate(); 
+            var context = scope.ServiceProvider.GetRequiredService<ShopDbContext>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+            logger.LogInformation("Create BD");
+            context.Database.EnsureCreated();
+
+            DbInitializer.Seed(context, logger);
         }
 
         app.UseRouting();
