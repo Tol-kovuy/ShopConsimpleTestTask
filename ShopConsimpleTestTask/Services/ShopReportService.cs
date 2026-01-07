@@ -4,15 +4,15 @@ using ShopConsimpleTestTask.DTOs;
 
 namespace ShopConsimpleTestTask.Services
 {
-    public class ShopService : IShopService
+    public class ShopReportService : IShopReportService
     {
         private readonly ShopDbContext _context;
-        private readonly ILogger<ShopService> _logger;
+        private readonly ILogger<ShopReportService> _logger;
 
-        public ShopService
+        public ShopReportService
             (
-            ShopDbContext context, 
-            ILogger<ShopService> logger
+            ShopDbContext context,
+            ILogger<ShopReportService> logger
             )
         {
             _context = context;
@@ -21,15 +21,24 @@ namespace ShopConsimpleTestTask.Services
 
         public async Task<IEnumerable<BirthdayClientDto>> GetBirthdayClientsAsync(DateTime date)
         {
+            if (date > DateTime.UtcNow.AddYears(1))
+            {
+                _logger.LogWarning("Invalid date range: {Date}", date);
+                throw new ArgumentException("Invalid date range");
+            }
+
             try
             {
+                var dateOnly = date.Date;
+
                 var clients = await _context.Clients
-                    .Where(c => c.DateOfBirth.Month == date.Month && c.DateOfBirth.Day == date.Day)
-                    .Select(c => new BirthdayClientDto
-                    {
-                        Id = c.Id,
-                        FullName = c.FullName
-                    })
+                    .Where(c => c.DateOfBirth.Month == dateOnly.Month &&
+                    c.DateOfBirth.Day == dateOnly.Day)
+                     .Select(c => new BirthdayClientDto
+                     {
+                         Id = c.Id,
+                         FullName = c.FullName
+                     })
                     .ToListAsync();
 
                 _logger.LogInformation("Found {Count} birthdays on date {Date}", clients.Count, date.ToString("yyyy-MM-dd"));
@@ -38,12 +47,12 @@ namespace ShopConsimpleTestTask.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, message: "Error by date ", date);
+                _logger.LogError(ex, message: "Error by date {Date}", date);
                 throw;
             }
         }
 
-        public async Task<IEnumerable<ClientByLastDayDto>> GetBuyersByLastDaysAsycn(int days)
+        public async Task<IEnumerable<ClientByLastDayDto>> GetBuyersByLastDaysAsycn(int days, DateTime? referenceDate = null)
         {
             if (days <= 0)
             {
@@ -51,19 +60,19 @@ namespace ShopConsimpleTestTask.Services
                 throw new ArgumentException("Days may be > 0", nameof(days));
             }
 
-            var cutoffDate = DateTime.Today.AddDays(-days);
+            var reference = referenceDate?.Date ?? DateTime.UtcNow.Date;
+            var cutoffDate = reference.AddDays(-days);
 
             try
             {
-                var buyers = await _context.Clients
-                    .Where(c => c.Purchases.Any(p => p.Date >= cutoffDate))
-                    .Select(c => new ClientByLastDayDto
+                var buyers = await _context.Purchases
+                    .Where(p => p.Date >= cutoffDate)
+                    .GroupBy(p => p.Client)
+                    .Select(g => new ClientByLastDayDto
                     {
-                        Id = c.Id,
-                        FullName = c.FullName,
-                        LastPurchaseDate = c.Purchases
-                            .Where(p => p.Date >= cutoffDate)
-                            .Max(p => p.Date)
+                        Id = g.Key.Id,
+                        FullName = g.Key.FullName,
+                        LastPurchaseDate = g.Max(p => p.Date)
                     })
                     .OrderByDescending(b => b.LastPurchaseDate)
                     .ToListAsync();

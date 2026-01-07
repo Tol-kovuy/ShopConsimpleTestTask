@@ -8,17 +8,17 @@ namespace ShopConsimpleTestTask.Controllers
     [Route("api/[controller]")]
     public class ShopController : ControllerBase
     {
-        private readonly IShopService _shopService;
+        private readonly IShopReportService _shopService;
         private readonly ILogger<ShopController> _logger;
 
-        public ShopController(IShopService shopService, ILogger<ShopController> logger)
+        public ShopController(IShopReportService shopService, ILogger<ShopController> logger)
         {
             _shopService = shopService;
             _logger = logger;
         }
 
-        [HttpGet("birthday-clients/{date}")]
-        public async Task<ActionResult<IEnumerable<BirthdayClientDto>>> GetBirthdayClientsAsync(DateTime date)
+        [HttpGet("birthday-clients")]
+        public async Task<ActionResult<IEnumerable<BirthdayClientDto>>> GetBirthdayClientsAsync([FromQuery] DateTime date)
         {
             try
             {

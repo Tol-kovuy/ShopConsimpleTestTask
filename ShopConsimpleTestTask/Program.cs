@@ -27,7 +27,7 @@ internal class Program
             });
         });
 
-        builder.Services.AddScoped<IShopService, ShopService>();
+        builder.Services.AddScoped<IShopReportService, ShopReportService>();
 
         var app = builder.Build();
 
@@ -38,6 +38,7 @@ internal class Program
 
             logger.LogInformation("Create BD");
             context.Database.EnsureCreated();
+            //context.Database.Migrate();
 
             DbInitializer.Seed(context, logger);
         }
